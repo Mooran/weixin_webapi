@@ -17,14 +17,24 @@ while (true) {
 
         $online_list = get_cache('online_list');
 
-        $process_count = exec("ps ax | grep wx_listener.php | grep -v 'grep' | wc -l");
+        if (strtoupper(substr(PHP_OS,0,3))==='WIN'){
+            $process_count = -1;
+        }else{
+            $process_count = exec("ps ax | grep wx_listener.php | grep -v 'grep' | wc -l");
+        }
+
 
         if ($process_count >= 10) {
             sleep(1);
             goto start;
         }
 
-        exec('php wx_listener.php ' . $id . ' > log/'.$id.' &');
+        if (strtoupper(substr(PHP_OS,0,3)) === 'WIN'){
+            exec('start php wx_listener.php ' . $id . ' > log/'.$id );
+        } else {
+            exec('php wx_listener.php ' . $id . ' > log/'.$id.' &');
+        }
+        
         _echo('启动进程, 用户ID: '.$id);
 
         $online_list[] = $id;
