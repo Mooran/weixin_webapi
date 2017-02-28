@@ -1,70 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>登录微信</title>
-    <script src="//cdn.bootcss.com/jquery/1.2.3/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0">
+    <link href="http://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://cdn.bootcss.com/animate.css/3.5.2/animate.min.css" rel="stylesheet">
+    <style>
+        html,
+        body,
+        .page-wrap {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .page {
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            -webkit-perspective: 1000;
+        }
+    </style>
 </head>
+
 <body>
-
-<!--
-<div id="uuid"></div>
-<hr>
--->
-
-<br>
-<div>当前可托管微信数: <span id="">5</span></div>
-<br>
-<div>当前已托管微信数: <span id="online_num">统计中...</span></div>
-<br>
-<div>等待托管排队中微信数: <span id="wait_num">统计中...</span></div>
-<hr>
-<br>
-<div id="qrcode">正在生成登录二维码...</div>
-
+    <div class="page-wrap">
+        <div class="page">
+            <div class="title" data-animation='{"name": "bounceIn", "duration": 800, "timing-function": "ease", "fill-mode": "both"}'>page one</div>
+            <div class="subtitle">page one subtitle</div>
+            <div class="arrow"></div>
+        </div>
+        <div class="page">
+            <div class="title">page two</div>
+            <div class="subtitle">page two subtitle</div>
+            <div class="arrow"></div>
+        </div>
+        <div class="page">
+            <div class="title">page three</div>
+            <div class="subtitle">page three subtitle</div>
+            <div class="arrow"></div>
+        </div>
+        <div class="page">
+            <div class="title">page four</div>
+            <div class="subtitle">page four subtitle</div>
+        </div>
+    </div>
 </body>
+<!-- <script src="//cdn.bootcss.com/jquery/1.2.3/jquery.min.js"></script> -->
+<script src="./statics/scripts/zepto.min.js"></script>
+<script src="./statics/scripts/PageSlider.js"></script>
 <script>
-    $(function(){
-        var random = new Date().getTime()+Math.ceil(Math.random()*1000);
-        var uuid = '';
-        $("#uuid").html(random);
-
-        var id = window.setInterval(function(){
-            $.getJSON("/weixin_webapi/qrcode.php",{id:random} , function (data) {
-
-                $("#online_num").text(data.online_list_count);
-                $("#wait_num").text(data.wait_list_count);
-
-
-                if (data.status == 0) {
-                    $("#qrcode").text('警告: 微信登录失败或意外退出,请刷新本页面,重新生成登录二维码 ...');
-                    //window.clearInterval(id);
-                }
-
-                if (data.status == 1) {
-                    $("#qrcode").text('第一步, 正在排队中,等待微信被托管 ...');
-                }
-
-                if (data.status == 2) {
-                    $("#qrcode").text('第二步, 正在生成登录二维码 ...');
-                }
-
-                if (data.status >= 4) {
-                    $("#qrcode").text('第三步, 微信托管成功,请关闭本页面 ...');
-                    //window.clearInterval(id);
-                }
-
-                if (data.status == 3) {
-
-                    if (data.uuid != uuid) {
-                        var img_tag = '<img src="saved/'+data.uuid+'.png?r='+Math.random()+'" />';
-                        $("#qrcode").html(img_tag);
-                        uuid = data.uuid;
-                    }
-                }
-            });
-        },1000)
+$(document).on('ready',function(){
+    window.ps = new PageSlider({
+        pages: $('.page-wrap .page')
     });
+});
+// $(function(){
+//     var random = new Date().getTime()+Math.ceil(Math.random()*1000);
+//     var uuid = '';
+//     $("#uuid").html(random);
 
+//     var id = window.setInterval(function(){
+//         $.getJSON("/qrcode.php", {id:1488164673998} , function (data) {
+
+//             $("#online_num").text(data.online_list_count);
+//             $("#wait_num").text(data.wait_list_count);
+
+
+//             if (data.status == 0) {
+//                 $("#qrcode").text('警告: 微信登录失败或意外退出,请刷新本页面,重新生成登录二维码 ...');
+//                 //window.clearInterval(id);
+//             }
+
+//             if (data.status == 1) {
+//                 $("#qrcode").text('第一步, 正在排队中,等待微信被托管 ...');
+//             }
+
+//             if (data.status == 2) {
+//                 $("#qrcode").text('第二步, 正在生成登录二维码 ...');
+//             }
+
+//             if (data.status >= 4) {
+//                 $("#qrcode").text('第三步, 微信托管成功,请关闭本页面 ...');
+//                 //window.clearInterval(id);
+//             }
+
+//             if (data.status == 3) {
+
+//                 if (data.uuid != uuid) {
+//                     var img_tag = '<img src="saved/'+data.uuid+'.png?r='+Math.random()+'" />';
+//                     $("#qrcode").html(img_tag);
+//                     uuid = data.uuid;
+//                 }
+//             }
+//         });
+//     },5000)
+// });
 </script>
+
 </html>
