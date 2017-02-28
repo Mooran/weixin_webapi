@@ -104,9 +104,10 @@ class WebWeixin
         $url = 'https://login.weixin.qq.com/l/'.$this->uuid;
 
         QRcode::png($url, 'saved/'.$this->uuid.'.png', 'L', 4, 2);
-
-        exec('open '.'saved/'.$this->uuid.'.png');
-
+        if (strtoupper(substr(PHP_OS,0,3))==='WIN'){
+        }else{
+            exec('open '.'saved/'.$this->uuid.'.png');
+        }
         return true;
     }
 
@@ -1088,7 +1089,6 @@ class WebWeixin
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER , FALSE);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
         $data = curl_exec($ch);
-        echo $data;
         if (curl_errno($ch)) {
             print "Error: " . curl_error($ch);
             return false;
@@ -1140,7 +1140,7 @@ class WebWeixin
         _echo('微信初始化 ...', $this->webWxInit());
 
         $id_info = array('status'=>4);
-        //set_cache($this->id, $id_info);
+        set_cache($this->id, $id_info);
 
         _echo('开启状态通知 ...', $this->webWxStatusNotify());
 
@@ -1150,14 +1150,14 @@ class WebWeixin
 
         _echo(sprintf('共有 %d 个群, %d 个直接联系人, %d 个特殊账号, %d 个公众号', count($this->group_list), count($this->contact_list), count($this->special_user_list), count($this->public_user_list)));
 
-        _echo('获取群信息 ...', $this->webWxBatchGetContact());
+        //_echo('获取群信息 ...', $this->webWxBatchGetContact());
 
         // $this->_webWxSendmsg('微信托管成功', $this->User['UserName']);
 
         // _echo('发送图片 ...', $this->_webWxSendimg('test.jpg', $this->User['UserName']));
         // _echo('发送图片 ...', $this->_webWxSendimg('test.png', $this->User['UserName']));
         // _echo('发送图片 ...', $this->_webWxSendimg('test.gif', $this->User['UserName']));
-        $this->OperateLoop();
+        $this->OperateLoop("s");
 
         $this->logout();
 
@@ -1167,16 +1167,20 @@ class WebWeixin
     private function getMine(){
         return $this->User;
     }
-    private function OperateLoop(){
-        while(true){
+    private function OperateLoop($default=null){
+        if ($default){
+            $line = $default;
+        }else{
             $line = fgets(STDIN);
+        }
+        while(true){
             switch ($line[0]) {
                 case 'm':
                     foreach ($this->member_list as $v) {
                         // $url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetheadimg?seq='.rand(1,10000).'&username='.$v['UserName'].'&skey='.$this->skey;  
                         // $img_data = $this->_get($url);
                         // file_put_contents('data/'.$v['UserName'].'.jpeg', $img_data);
-                        echo $v["NickName"].'-------->'.$v["UserName"]."\n";
+                        var_dump($v);
                     }
                     break;
                 case 'M':{
@@ -1184,8 +1188,15 @@ class WebWeixin
                     break;
                 }
                 case 's':{
-                    $this->_webWxSendmsg('发送测试', array_filter(explode(' ', $line))[1]);
-                    break;
+                    $id_info = array('status'=>5);
+                    set_cache($this->id, $id_info);
+                    foreach ($this->contact_list as $item) {
+                        $this->_webWxSendmsg('利亚方舟科技有限公司是从事影楼ERP的研发与销售，全国有万余家客户在使用。产品包括赢销宝、爆客大系统、微商城、CRM、OA、助力、微传单、推分享等产品，深受各企业的喜爱。联系电话：4006-067-068', $item["UserName"]);
+                        sleep(5);
+                    }
+                    $id_info = array('status'=>6);
+                    set_cache($this->id, $id_info);
+                    return ;
                 }
                 case 'q':{
                     return ;
