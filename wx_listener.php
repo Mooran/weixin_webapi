@@ -52,7 +52,7 @@ class WebWeixin
     public function __construct()
     {
         $this->cookie_jar = tempnam(sys_get_temp_dir(), 'wx_webapi');
-        $this->device_id = 'e'.rand(100000000000000, 999999999999999);
+        $this->device_id = 'e'.rand(1000000, 9999999).rand(10000000, 99999999);;
     }
 
     /**
@@ -176,10 +176,10 @@ class WebWeixin
         }
 
         $this->BaseRequest = array(
-            'Uin' => intval($this->uin),
+            'Uin' => $this->uin,
             'Sid' => $this->sid,
             'Skey' => $this->skey,
-            'DeviceID' => $this->device_id
+            'DeviceID' => (string)$this->device_id
         );
 
         return true;
@@ -191,7 +191,7 @@ class WebWeixin
      */
     public function webWxInit()
     {
-        $url = sprintf($this->base_uri . '/webwxinit?r=%i&lang=en_US&pass_ticket=%s', time(), $this->pass_ticket);
+        $url = sprintf($this->base_uri . '/webwxinit?r=%i&lang=zh_CN&pass_ticket=%s', time(), $this->pass_ticket);
 
         $params = json_encode(array('BaseRequest'=>$this->BaseRequest));
 
@@ -858,7 +858,6 @@ class WebWeixin
                 'ClientMsgId' => $clientMsgId
             )
         );
-
         $data = $this->_post($url, json_encode($params, JSON_UNESCAPED_UNICODE));
 
         $arr_data = json_decode($data, true);
@@ -1022,7 +1021,7 @@ class WebWeixin
         curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)");
         curl_setopt($ch, CURLOPT_COOKIEJAR, $this->cookie_jar);
         curl_setopt($ch, CURLOPT_COOKIEFILE, $this->cookie_jar);
-
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER , false);
         $data = curl_exec($ch);
 
         if (curl_errno($ch)) {
@@ -1051,7 +1050,8 @@ class WebWeixin
 
         curl_setopt($ch, CURLOPT_COOKIEJAR, $this->cookie_jar);
         curl_setopt($ch, CURLOPT_COOKIEFILE, $this->cookie_jar);
-
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER , FALSE);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
         $data = curl_exec($ch);
 
         if (curl_errno($ch)) {
@@ -1082,12 +1082,15 @@ class WebWeixin
         curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-        curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)");
+        curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.109 Safari/537.36");
         curl_setopt($ch, CURLOPT_COOKIEJAR, $this->cookie_jar);
         curl_setopt($ch, CURLOPT_COOKIEFILE, $this->cookie_jar);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER , FALSE);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
         $data = curl_exec($ch);
+        echo $data;
         if (curl_errno($ch)) {
-            //print "Error: " . curl_error($ch);
+            print "Error: " . curl_error($ch);
             return false;
         } else {
             return $data;
@@ -1109,7 +1112,7 @@ class WebWeixin
 
             // 设置用户与二维码对应关系
             $id_info = array('status'=>3, 'uuid'=>$this->uuid);
-            //set_cache($this->id, $id_info);
+            set_cache($this->id, $id_info);
 
             $login_num++;
 
@@ -1149,24 +1152,53 @@ class WebWeixin
 
         _echo('获取群信息 ...', $this->webWxBatchGetContact());
 
-        $this->_webWxSendmsg('微信托管成功', $this->User['UserName']);
+        // $this->_webWxSendmsg('微信托管成功', $this->User['UserName']);
 
-        _echo('发送图片 ...', $this->_webWxSendimg('test.jpg', $this->User['UserName']));
-        _echo('发送图片 ...', $this->_webWxSendimg('test.png', $this->User['UserName']));
-        _echo('发送图片 ...', $this->_webWxSendimg('test.gif', $this->User['UserName']));
+        // _echo('发送图片 ...', $this->_webWxSendimg('test.jpg', $this->User['UserName']));
+        // _echo('发送图片 ...', $this->_webWxSendimg('test.png', $this->User['UserName']));
+        // _echo('发送图片 ...', $this->_webWxSendimg('test.gif', $this->User['UserName']));
+        $this->OperateLoop();
 
         $this->logout();
 
-		/*
-		foreach ($this->member_list as $v) {
-			$url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetheadimg?seq='.rand(1,10000).'&username='.$v['UserName'].'&skey='.$this->skey;	
-			$img_data = $this->_get($url);
-			file_put_contents('data/'.$v['UserName'].'.jpeg', $img_data);
-		}
-		*/	
         //$this->listenMsgMode();
     }
+
+    private function getMine(){
+        return $this->User;
+    }
+    private function OperateLoop(){
+        while(true){
+            $line = fgets(STDIN);
+            switch ($line[0]) {
+                case 'm':
+                    foreach ($this->member_list as $v) {
+                        // $url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetheadimg?seq='.rand(1,10000).'&username='.$v['UserName'].'&skey='.$this->skey;  
+                        // $img_data = $this->_get($url);
+                        // file_put_contents('data/'.$v['UserName'].'.jpeg', $img_data);
+                        echo $v["NickName"].'-------->'.$v["UserName"]."\n";
+                    }
+                    break;
+                case 'M':{
+                    var_dump($this->getMine());
+                    break;
+                }
+                case 's':{
+                    $this->_webWxSendmsg('发送测试', array_filter(explode(' ', $line))[1]);
+                    break;
+                }
+                case 'q':{
+                    return ;
+                }
+                default:
+                    echo "输入错误";
+                    break;
+            }
+
+        }
+    }
 }
+
 
 $id = $argv[1];
 
