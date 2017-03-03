@@ -47,10 +47,10 @@ function _save_data($data, $id)
  */
 function get_cache($key)
 {
-    $mc = new Memcache();
-    $mc->addServer("192.168.1.182", 11211);
+    // $mc = new Memcache();
+    // $mc->addServer("192.168.1.182", 11211);
 
-    return $mc->get($key);
+    // return $mc->get($key);
 }
 
 
@@ -63,10 +63,10 @@ function get_cache($key)
  */
 function set_cache($key, $value, $expiration=3600)
 {
-    $mc = new Memcache();
-    $mc->addServer("192.168.1.182", 11211);
+    // $mc = new Memcache();
+    // $mc->addServer("192.168.1.182", 11211);
 
-    return $mc->set($key, $value, 0, $expiration);
+    // return $mc->set($key, $value, 0, $expiration);
 }
 
 /**
@@ -75,8 +75,8 @@ function set_cache($key, $value, $expiration=3600)
  */
 function del_cache($key)
 {
-    $m = new Memcache();
-    $m->addServer('192.168.1.182', 11211);
+    // $m = new Memcache();
+    // $m->addServer('192.168.1.182', 11211);
 
-    $m->delete($key);
+    // $m->delete($key);
 }

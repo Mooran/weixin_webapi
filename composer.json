@@ -1,0 +1,7 @@
+{
+    "name": "lyfz/wechat-contact-adv",
+    "require": {},
+    "autoload": {
+        "psr-4": {"Lyfz\\": "libs/"}
+    }
+}

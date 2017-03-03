@@ -1,5 +1,7 @@
 <?php
 
+namespace Lyfz;
+
 require_once 'libs/phpqrcode/qrlib.php';
 require_once 'libs/function.php';
 
@@ -59,9 +61,9 @@ class WebWeixin
      * 设置ID
      * @param $id
      */
-    public function setId($id)
+    public function setUUID($uuid)
     {
-        $this->id = $id;
+        $this->uuid = $uuid;
     }
 
     /**
@@ -70,45 +72,48 @@ class WebWeixin
      */
     public function getUUID()
     {
-        $url = 'https://login.weixin.qq.com/jslogin';
+        if (!$this->uuid){
+            $url = 'https://login.weixin.qq.com/jslogin';
 
-        $params = array(
-            'appid' => $this->appid,
-            'fun' => 'new',
-            'lang' => 'zh_CN',
-            '_' => time()
-        );
+            $params = array(
+                'appid' => $this->appid,
+                'fun' => 'new',
+                'lang' => 'zh_CN',
+                '_' => time()
+            );
 
-        $data = $this->_post($url, $params, false);
+            $data = $this->_post($url, $params, false);
 
-        $regx = '#window.QRLogin.code = (\d+); window.QRLogin.uuid = "(\S+?)"#';
+            $regx = '#window.QRLogin.code = (\d+); window.QRLogin.uuid = "(\S+?)"#';
 
-        preg_match($regx, $data, $res);
+            preg_match($regx, $data, $res);
 
-        if ($res) {
-            $code = $res[1];
-            $this->uuid = $res[2];
+            if ($res){
+                $code = $res[1];
 
-            return $code == '200';
+                if ($code == 200){
+                    $this->uuid = $res[2];
+                } else {
+                    return false;
+                }
+            }
+
         }
-
-        return false;
+        return $this->uuid;
     }
-
-
     /**
      * 生成登录二维码
      */
-    public function genQRCodeImg()
+    public function genQRCodeImg($uuid = null)
     {
-        $url = 'https://login.weixin.qq.com/l/'.$this->uuid;
-
-        QRcode::png($url, 'saved/'.$this->uuid.'.png', 'L', 4, 2);
-        if (strtoupper(substr(PHP_OS,0,3))==='WIN'){
-        }else{
-            exec('open '.'saved/'.$this->uuid.'.png');
+        if (!$uuid) {
+            $uuid = $this->uuid;
         }
-        return true;
+
+        $url = 'https://login.weixin.qq.com/l/'.$uuid;
+        $savePath = 'saved/'.$uuid.'.png';
+        \QRcode::png($url, $savePath, 'L', 4, 2);
+        return $savePath;
     }
 
 
@@ -150,6 +155,7 @@ class WebWeixin
             _echo('登录超时');
         } else {
             _echo('登录异常');
+            return $code;
         }
 
         return false;
@@ -996,7 +1002,6 @@ class WebWeixin
         );
 
         $this->_post($url, $params, false);
-		exit();
     }
 
 
@@ -1101,72 +1106,66 @@ class WebWeixin
     /**
      * 运行
      */
-    public function run()
+    public function init($content, $target)
     {
-        _echo('微信网页版 ... 启动');
-
-        $login_num = 0;
+        $trial_times = 0;
         while (true) {
-            _echo('正在获取 UUID ... ', $this->getUUID());
-            _echo('正在获取二维码 ...', $this->genQRCodeImg());
-
             // 设置用户与二维码对应关系
-            $id_info = array('status'=>3, 'uuid'=>$this->uuid);
-            set_cache($this->id, $id_info);
+            // $id_info = array('status'=>3, 'uuid'=>$this->uuid);
+            // set_cache($this->id, $id_info);
+            _echo('请使用微信扫描二维码 ...');
+            $state = $this->waitForLogin();
 
-            $login_num++;
-
-            if ($login_num == 3) {
-                exit();
+            if ($state === '400'){
+                _echo('二维码已超时，结束本次登录');
+                return false;
             }
 
-            _echo('请使用微信扫描二维码 ...');
-
-            if (!$this->waitForLogin()) {
+            if (!$state) {
                 continue;
             }
-
+            
             _echo('请在手机上点击确认登录 ...');
-
             if (!$this->waitForLogin(0)) {
                 continue;
             }
-
             break;
         }
 
         _echo('正在登录 ...', $this->login());
 
-        _echo('微信初始化 ...', $this->webWxInit());
+        sleep(1);
+        if ($this->webWxInit()){
+            _echo('微信初始化 ...', true);
 
-        $id_info = array('status'=>4);
-        set_cache($this->id, $id_info);
+            _echo('获取联系人信息 ...', $this->webWxGetContact());
 
-        _echo('开启状态通知 ...', $this->webWxStatusNotify());
+            $this->MassSend($content, $target);
 
-        _echo('获取联系人信息 ...', $this->webWxGetContact());
+            $this->logout();
 
-        _echo(sprintf('应用 %s 个联系人, 读取到联系人 %s 个', $this->member_count, count($this->member_list)));
+            return true;
+        }else{
+            _echo('微信初始化 ...', false);
+        }
 
-        _echo(sprintf('共有 %d 个群, %d 个直接联系人, %d 个特殊账号, %d 个公众号', count($this->group_list), count($this->contact_list), count($this->special_user_list), count($this->public_user_list)));
-
-        //_echo('获取群信息 ...', $this->webWxBatchGetContact());
-
-        // $this->_webWxSendmsg('微信托管成功', $this->User['UserName']);
-
-        // _echo('发送图片 ...', $this->_webWxSendimg('test.jpg', $this->User['UserName']));
-        // _echo('发送图片 ...', $this->_webWxSendimg('test.png', $this->User['UserName']));
-        // _echo('发送图片 ...', $this->_webWxSendimg('test.gif', $this->User['UserName']));
-        $this->OperateLoop("s");
-
-        $this->logout();
-
-        //$this->listenMsgMode();
+        return false;
     }
 
     private function getMine(){
         return $this->User;
     }
+
+    public function MassSend($content, $target){
+        /* 使用了php反射调用 */
+        $target .= '_list';
+        foreach ($this->$target as $item) {
+            $this->_webWxSendmsg($content, $item["UserName"]);
+            sleep(2);
+        } 
+        return true;
+    }
+
     private function OperateLoop($default=null){
         if ($default){
             $line = $default;
@@ -1211,11 +1210,10 @@ class WebWeixin
 }
 
 
-$id = $argv[1];
+// $id = $argv[1];
 
-//register_shutdown_function('shutdown', $id);
+// //register_shutdown_function('shutdown', $id);
 
-
-$weixin = new WebWeixin();
-$weixin->setId($id);
-$weixin->run();
+// $weixin = new WebWeixin();
+// // $weixin->setId($id);
+// $weixin->run();
