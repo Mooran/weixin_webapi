@@ -154,7 +154,7 @@ class WebWeixin
         } elseif ($code == '408') {
             _echo('登录超时');
         } else {
-            _echo('登录异常');
+            _echo('登录异常'. $this->uuid);
             return $code;
         }
 
@@ -1106,7 +1106,7 @@ class WebWeixin
     /**
      * 运行
      */
-    public function init($content, $target)
+    public function init()
     {
         $trial_times = 0;
         while (true) {
@@ -1139,10 +1139,6 @@ class WebWeixin
             _echo('微信初始化 ...', true);
 
             _echo('获取联系人信息 ...', $this->webWxGetContact());
-
-            $this->MassSend($content, $target);
-
-            $this->logout();
 
             return true;
         }else{
