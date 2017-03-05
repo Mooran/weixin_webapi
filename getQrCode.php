@@ -17,7 +17,16 @@ class Api {
 
         $target = filter_input(INPUT_GET, 'target');
 
-        self::notifyWorkServer($uuid, $content, $target);
+        $image_url = filter_input(INPUT_GET, 'img_url');
+
+        if ($image_url) {
+
+            $file = file_get_contents($image_url);
+
+            file_put_contents('saved/uploads/'.$uuid.'.tmp', $file);
+        }
+
+        self::notifyWorkServer($uuid, $content, $target, !!$image_url);
 
         echo json_encode([
             'code' => 0,
@@ -29,7 +38,7 @@ class Api {
         ]);
     }
 
-    public static function notifyWorkServer($uuid, $content, $target){
+    public static function notifyWorkServer($uuid, $content, $target, $hasImage = false){
         $address = 'localhost';
         $service_port = 36640;
         
@@ -54,7 +63,8 @@ class Api {
         $in = json_encode([
             'uuid' => $uuid,
             'content' => $content,
-            'target' => $target
+            'target' => $target,
+            'hasImage' => $hasImage
         ]);
 
         socket_write($socket, $in, strlen($in));

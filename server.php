@@ -4,8 +4,6 @@ require_once 'libs/function.php';
 
 require_once ('./vendor/autoload.php');
 
-use Lyfz\WebWeixin;
-
 use Lyfz\ThreadProcess;
 
 class Server {
@@ -43,7 +41,7 @@ class Server {
                 
                 _echo ('接收到启动消息，启动中...');
 
-                $thread = new ThreadProcess($result->uuid, $result->content, $result->target);
+                $thread = new ThreadProcess($result->uuid, $result->content, $result->target, $result->hasImage);
 
                 $thread->start();
 

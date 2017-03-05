@@ -3,10 +3,11 @@ namespace Lyfz;
 
 class ThreadProcess extends \Thread{
 
-    function __construct($uuid, $content, $target){
+    function __construct($uuid, $content, $target, $hasImage){
         $this->uuid = $uuid;
         $this->content = $content;
         $this->target = $target;
+        $this->hasImage = $hasImage;
     }
 
     function run(){
@@ -19,7 +20,7 @@ class ThreadProcess extends \Thread{
 
         if ($wx->init()){
 
-            $wx->MassSend($this->content, $this->target);
+            $wx->MassSend($this->content, $this->target, $this->hasImage);
 
             $wx->logout();
 

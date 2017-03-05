@@ -749,9 +749,9 @@ class WebWeixin
      * @param $file
      * @return bool
      */
-    private function _uploadmedia($file)
+    public function _uploadmedia($file)
     {
-        $url = 'https://file.wx.qq.com/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json';
+        $url = 'https://file.wx2.qq.com/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json';
         $clientMsgId = time()*1000 . rand(1000, 9999);
 
         $cookie_data = file($this->cookie_jar);
@@ -766,19 +766,20 @@ class WebWeixin
         }
 		$finfo = finfo_open(FILEINFO_MIME_TYPE);
 		$mime_type = finfo_file($finfo, $file);
+        $filesize = filesize($file);
         $data = array(
             'id' => 'WU_FILE_1',
             'name' => basename($file),
             'type' => $mime_type,
             'lastModifiedDate' => date('D M m Y H:i:s').' GMT+0800 (CST)',
-            'size' => filesize($file),
+            'size' => $filesize,
             'mediatype' => 'pic',
             'uploadmediarequest' => json_encode(array(
                 'BaseRequest' => $this->BaseRequest,
                 'ClientMediaId' => $clientMsgId,
-                'TotalLen' => filesize($file),
+                'TotalLen' => $filesize,
                 'StartPos' => 0,
-                'DataLen' => filesize($file),
+                'DataLen' => $filesize,
                 'MediaType' => 4
             )),
             'webwx_data_ticket' => $cookies['webwx_data_ticket'],
@@ -798,7 +799,6 @@ class WebWeixin
 		echo '上传成功'.PHP_EOL;	
         return $res['MediaId'];
     }
-
 
     /**
      * 发送图片信息
@@ -1152,48 +1152,49 @@ class WebWeixin
         return $this->User;
     }
 
-    public function MassSend($content, $target){
+    public function MassSend($content, $target, $hasImage=false){
         /* 使用了php反射调用 */
         $target .= '_list';
         foreach ($this->$target as $item) {
+            if ($hasImage){
+                $this->_webWxSendimg('saved/uploads/'.$this->uuid.'.tmp');
+                sleep(1);
+            }
             $this->_webWxSendmsg($content, $item["UserName"]);
             sleep(2);
         } 
         return true;
     }
 
-    private function OperateLoop($default=null){
-        if ($default){
-            $line = $default;
-        }else{
-            $line = fgets(STDIN);
-        }
+    public function OperateLoop($default=null){
         while(true){
+            if ($default){
+                $line = $default;
+            }else{
+                $line = fgets(STDIN);
+            }
             switch ($line[0]) {
-                case 'm':
-                    foreach ($this->member_list as $v) {
-                        // $url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetheadimg?seq='.rand(1,10000).'&username='.$v['UserName'].'&skey='.$this->skey;  
-                        // $img_data = $this->_get($url);
-                        // file_put_contents('data/'.$v['UserName'].'.jpeg', $img_data);
-                        var_dump($v);
+                case 'c':
+                    foreach ($this->contact_list as $v) {
+                        echo $v["UserName"].' ---> '.$v['NickName']."\n";
                     }
                     break;
                 case 'M':{
-                    var_dump($this->getMine());
+                    $this->getMine();
                     break;
                 }
                 case 's':{
-                    $id_info = array('status'=>5);
-                    set_cache($this->id, $id_info);
-                    foreach ($this->contact_list as $item) {
-                        $this->_webWxSendmsg('利亚方舟科技有限公司是从事影楼ERP的研发与销售，全国有万余家客户在使用。产品包括赢销宝、爆客大系统、微商城、CRM、OA、助力、微传单、推分享等产品，深受各企业的喜爱。联系电话：4006-067-068', $item["UserName"]);
-                        sleep(5);
-                    }
-                    $id_info = array('status'=>6);
-                    set_cache($this->id, $id_info);
-                    return ;
+                    $args = array_values(array_filter(explode(' ',$line)));
+                    $targetUsername = $args[1];
+                    $filename = $args[2];
+                    $this->_webWxSendimg($filename,$targetUsername);
+                }
+                case 'u':{
+                    echo $this->_uploadmedia("saved/gcMiQuksBw==.png");
+                    break;
                 }
                 case 'q':{
+                    $this->logout();
                     return ;
                 }
                 default:
