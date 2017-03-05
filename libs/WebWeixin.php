@@ -260,7 +260,7 @@ class WebWeixin
 
         $arr_data = json_decode($data, true);
 
-        //file_put_contents('/tmp/data.json', $data);
+        // file_put_contents('/tmp/data.json', $data);
 
         $this->member_count = $arr_data['MemberCount'];
         $this->member_list = $arr_data['MemberList'];
@@ -282,7 +282,8 @@ class WebWeixin
             }
         }
 
-        $this->contact_list = $contact_list;
+        $this->contact_list = array_values($contact_list);
+        $this->public_user_list = array_values($public_user_list);
 
         return true;
     }
@@ -413,7 +414,7 @@ class WebWeixin
     /**
      * 监听消息
      */
-    public function listenMsgMode()
+    public function listenMsgMode($times = null)
     {
         _echo('进入消息监听模式 ... 成功');
 
@@ -496,12 +497,12 @@ class WebWeixin
             sleep(1);
 
             // 进程状态
-            $id_info = array('status'=>5);
-            //set_cache($this->id, $id_info);
+            // $id_info = array('status'=>5);
+            // set_cache($this->id, $id_info);
 
             // 保持在线
-            $online_list[] = $this->id;
-            //set_cache('online_list', array_unique($online_list));
+            // $online_list[] = $this->id;
+            // set_cache('online_list', array_unique($online_list));
 
             $while_num++;
 
@@ -509,6 +510,9 @@ class WebWeixin
                 _echo('开启状态通知 ...', $this->webWxStatusNotify());
             }
 
+            if ($times != null && $while_num >= $times){
+                break;
+            }
         }
     }
 
@@ -639,7 +643,21 @@ class WebWeixin
         return $name;
     }
 
+    public function getUserById($id)
+    {
 
+        if ($id == $this->User['UserName']) {
+            return $this->User['NickName'];
+        }
+
+        foreach ($this->member_list as $member) {
+            if ($member['UserName'] == $id) {
+                return $member;
+            }
+        }
+
+        return null;
+    }
     public function handleMsg($res)
     {
         foreach ($res['AddMsgList'] as $msg) {
@@ -734,7 +752,11 @@ class WebWeixin
                 case 37:
                     _echo('有人加我为好友, 请审核');
                     break;
-
+                case 42:
+                    $this->tmp_content = $content;
+                    $this->tmp_recommondInfo = $msg['RecommendInfo'];
+                    _echo("收到名片消息,成功记录原始content,RecommendInfo");
+                    break;
                 // 同意对方加好友请求后的系统提示语
                 case 10000:
                     //_echo('你已添加了Vicky，现在可以开始聊天了');
@@ -871,8 +893,41 @@ class WebWeixin
 
         return $arr_data['BaseResponse']['Ret'] == 0;
     }
+    /**
+     * 发送公众号消息
+     * @param $content
+     * @param $user
+     * @return bool
+     */
+    private function _webWxSendPublic($publicId, $user)
+    {
+        $url = sprintf($this->base_uri.'/webwxsendappmsg');
+        $clientMsgId = time()*1000 . rand(1000, 9999);
 
+        $params = array(
+            'BaseRequest' => $this->BaseRequest,
+            'Msg' => array(
+                'Type' => 42,
+                'Content' => "",
+                'FromUserName' => $this->User['UserName'],
+                'ToUserName' => $user,
+                'LocalID' => $clientMsgId,
+                'ClientMsgId' => $clientMsgId,
+                'RecommendInfo' => $this->tmp_recommondInfo
+            )
+        );
+        echo json_encode($params, JSON_UNESCAPED_UNICODE);
 
+        $data = $this->_post($url, json_encode($params, JSON_UNESCAPED_UNICODE));
+
+        $arr_data = json_decode($data, true);
+
+        var_dump($arr_data);
+
+        return $arr_data['BaseResponse']['Ret'] == 0;
+    }
+    public $tmp_content = "";
+    public $tmp_recommondInfo = null;
     /**
      * 图灵机器人
      * @param $query
@@ -1157,7 +1212,7 @@ class WebWeixin
         $target .= '_list';
         foreach ($this->$target as $item) {
             if ($hasImage){
-                $this->_webWxSendimg('saved/uploads/'.$this->uuid.'.tmp');
+                $this->_webWxSendimg('saved/uploads/'.$this->uuid.'.tmp', $item["UserName"]);
                 sleep(1);
             }
             $this->_webWxSendmsg($content, $item["UserName"]);
@@ -1179,6 +1234,16 @@ class WebWeixin
                         echo $v["UserName"].' ---> '.$v['NickName']."\n";
                     }
                     break;
+                case 'l': {
+                    $this->listenMsgMode(1);
+                    break;
+                }
+                case 'p':
+                    $args = array_values(array_filter(explode(' ',$line)));
+                    $targetUsername = $args[1];
+                    $publicId = $args[2];
+                    $this->_webWxSendPublic($publicId, $targetUsername);
+                    break;
                 case 'M':{
                     $this->getMine();
                     break;
@@ -1190,7 +1255,7 @@ class WebWeixin
                     $this->_webWxSendimg($filename,$targetUsername);
                 }
                 case 'u':{
-                    echo $this->_uploadmedia("saved/gcMiQuksBw==.png");
+                    // echo $this->_uploadmedia("saved/gcMiQuksBw==.png");
                     break;
                 }
                 case 'q':{

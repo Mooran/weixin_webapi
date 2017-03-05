@@ -29,7 +29,7 @@ class Server {
 
             do {
 
-                _echo ('服务监听已启动，等待启动消息...');
+                _echo ('Service Listening...');
                 if (($msgsock = socket_accept($sock)) === false) {
                     echo "socket_accepty() failed : reason:".socket_strerror(socket_last_error($sock)) . "\n";
                     break;
@@ -37,17 +37,28 @@ class Server {
 
                 $result = json_decode(socket_read($msgsock, 8192));
 
-                socket_close($msgsock);
-                
-                _echo ('接收到启动消息，启动中...');
+                _echo ('Receive a start signal...');
 
                 $thread = new ThreadProcess($result->uuid, $result->content, $result->target, $result->hasImage);
 
                 $thread->start();
 
                 $thread_pool[] = $thread;
+                foreach ($thread_pool as $c_key => $c_thread) {
+                    if (!$c_thread->isRunning()){
+                        unset($thread_pool[$c_key]);
+                    }
+                }
+                _echo ("Start Successfully...The Count of Current Threads is：".count($thread_pool));
 
-                _echo ("启动完成...当前线程数：".count($thread_pool));
+                $in = json_encode([
+                    "thread_count" => count($thread_pool)
+                ]);
+
+                socket_write($msgsock, $in, strlen($in));
+
+                socket_close($msgsock);
+                
             } while(true);
         }
     }

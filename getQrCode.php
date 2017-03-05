@@ -26,14 +26,15 @@ class Api {
             file_put_contents('saved/uploads/'.$uuid.'.tmp', $file);
         }
 
-        self::notifyWorkServer($uuid, $content, $target, !!$image_url);
+        $thread_count = self::notifyWorkServer($uuid, $content, $target, !!$image_url);
 
         echo json_encode([
             'code' => 0,
             'info' => 'successfully',
             'data' => [
                 'uuid' => $uuid,
-                'qrcode' => base64_encode($image)
+                'qrcode' => base64_encode($image),
+                'thread_count' => $thread_count
             ]
         ]);
     }
@@ -68,6 +69,10 @@ class Api {
         ]);
 
         socket_write($socket, $in, strlen($in));
+
+        $rtn = json_decode(socket_read($socket, 8192));
+
+        return $rtn->thread_count;
     }
 }
 Api::Main();
