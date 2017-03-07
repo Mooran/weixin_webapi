@@ -897,7 +897,7 @@ class WebWeixin
         $data = $this->_post($url, json_encode($params, JSON_UNESCAPED_UNICODE));
 
         $arr_data = json_decode($data, true);
-
+        echo $arr_data['BaseResponse']['Ret'];
         return $arr_data['BaseResponse']['Ret'] == 0;
     }
     /**
@@ -1222,7 +1222,10 @@ class WebWeixin
                 $this->_webWxSendimg('saved/uploads/'.$this->uuid.'.tmp', $item["UserName"]);
                 sleep(1);
             }
-            $this->_webWxSendmsg($content, $item["UserName"]);
+            if (!$this->_webWxSendmsg($content, $item["UserName"])){
+                echo "User Logouted!\n";
+                break;
+            };
             sleep(2);
         } 
         return true;
