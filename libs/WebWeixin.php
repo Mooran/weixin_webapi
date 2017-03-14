@@ -882,7 +882,6 @@ class WebWeixin
     {
         $url = sprintf($this->base_uri.'/webwxsendmsg?pass_ticket=%s', $this->pass_ticket);
         $clientMsgId = time()*1000 . rand(1000, 9999);
-
         $params = array(
             'BaseRequest' => $this->BaseRequest,
             'Msg' => array(
@@ -894,10 +893,10 @@ class WebWeixin
                 'ClientMsgId' => $clientMsgId
             )
         );
-        $data = $this->_post($url, json_encode($params, JSON_UNESCAPED_UNICODE));
+        $data = $this->_post($url, json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         $arr_data = json_decode($data, true);
-        echo $arr_data['BaseResponse']['Ret'];
+
         return $arr_data['BaseResponse']['Ret'] == 0;
     }
     /**
